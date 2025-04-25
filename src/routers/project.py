@@ -1,14 +1,16 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db.database import get_async_db
 from src.core.dependencies import get_current_user
-from src.crud.project import (
+from src.crud import (
     create_project_crud,
     get_project_by_id_crud,
     delete_project_by_id,
     update_project_by_id,
     get_all_projects_by_id,
+    add_user_to_project_by_id,
+    get_user_by_id,
 )
 from src.models import User
 from src.schemas.project import ProjectBase, ProjectInfo, ProjectUpdateInfo, ProjectList
@@ -23,6 +25,7 @@ async def create_project(
     db: AsyncSession = Depends(get_async_db),
 ) -> ProjectInfo:
     project = await create_project_crud(project=project, author_id=user.id, db=db)
+    await add_user_to_project_by_id(user_id=user.id, project_id=project.id, db=db)
     return ProjectInfo(
         id=project.id,
         name=project.name,
@@ -35,9 +38,13 @@ async def create_project(
 
 @router.get("/{id}", summary="Get project by id")
 async def get_project_by_id(
-    project_id: int, db: AsyncSession = Depends(get_async_db)
+    project_id: int,
+    user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ) -> ProjectInfo:
     project = await get_project_by_id_crud(project_id=project_id, db=db)
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
     return ProjectInfo(
         id=project.id,
         name=project.name,
@@ -78,6 +85,12 @@ async def update_project(
 
 @router.get("/", summary="Get all user projects")
 async def get_all_projects_user(user_id: int, db: AsyncSession = Depends(get_async_db)):
+    user = await get_user_by_id(user_id=user_id, db=db)
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found",
+        )
     projects = await get_all_projects_by_id(user_id=user_id, db=db)
     project_list = [
         ProjectBase(name=project.name, description=project.description)

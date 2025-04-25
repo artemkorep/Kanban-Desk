@@ -7,8 +7,18 @@ from src.schemas import UserBase
 from src.service.auth import pwd_context
 
 
-async def get_user(username: str, db: AsyncSession = Depends(get_async_db)) -> User:
+async def get_user_by_username(
+    username: str, db: AsyncSession = Depends(get_async_db)
+) -> User:
     result = await db.execute(select(User).where(User.username == username))
+    user = result.scalars().first()
+    return user
+
+
+async def get_user_by_id(
+    user_id: int, db: AsyncSession = Depends(get_async_db)
+) -> User:
+    result = await db.execute(select(User).where(User.id == user_id))
     user = result.scalars().first()
     return user
 

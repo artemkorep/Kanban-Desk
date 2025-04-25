@@ -1,9 +1,5 @@
-from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker, declarative_base
-from sqlalchemy.ext.asyncio import AsyncAttrs
-from sqlalchemy.orm import DeclarativeBase
-from contextlib import asynccontextmanager
+from sqlalchemy.orm import sessionmaker
 
 from typing import AsyncGenerator, Any
 

@@ -1,8 +1,5 @@
 from sqlalchemy import (
-    Integer,
-    String,
     ForeignKey,
-    DateTime,
 )
 from sqlalchemy.orm import mapped_column, Mapped
 
@@ -17,7 +14,7 @@ class Task(Base):
     title: Mapped[str] = mapped_column(nullable=False)
     description: Mapped[str | None] = mapped_column()
     due_date: Mapped[datetime | None] = mapped_column()
-    column_id: Mapped[int] = mapped_column()
+    column_id: Mapped[int] = mapped_column(ForeignKey("column.id", ondelete="CASCADE"), nullable=False)
     author_id: Mapped[int] = mapped_column(
         ForeignKey("user.id", ondelete="CASCADE"), nullable=False
     )

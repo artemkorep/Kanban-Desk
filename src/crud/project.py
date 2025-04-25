@@ -1,4 +1,4 @@
-from typing import Sequence
+from typing import Sequence, Optional
 
 from fastapi import Depends, HTTPException
 from sqlalchemy.future import select
@@ -6,7 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.core.db.database import get_async_db
 from src.models import Project
-from src.schemas.project import ProjectBase, ProjectUpdateInfo
+from src.schemas import ProjectBase, ProjectUpdateInfo
 
 
 async def create_project_crud(
@@ -21,13 +21,12 @@ async def create_project_crud(
     db.add(db_project)
     await db.commit()
     await db.refresh(db_project)
-
     return db_project
 
 
 async def get_project_by_id_crud(
     project_id: int, db: AsyncSession = Depends(get_async_db)
-) -> Project:
+) -> Optional[Project]:
     result = await db.execute(select(Project).where(Project.id == project_id))
     project = result.scalars().first()
 
@@ -37,7 +36,7 @@ async def get_project_by_id_crud(
 async def delete_project_by_id(
     project_id: int, db: AsyncSession = Depends(get_async_db)
 ) -> bool:
-    project = get_project_by_id_crud(project_id=project_id, db=db)
+    project = await get_project_by_id_crud(project_id=project_id, db=db)
     if not project:
         raise HTTPException(
             status_code=404,
@@ -55,6 +54,11 @@ async def update_project_by_id(
     db: AsyncSession = Depends(get_async_db),
 ) -> Project:
     project = await get_project_by_id_crud(project_id=project_id, db=db)
+    if not project:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Project with id {project_id} not found",
+        )
     if user_id != project.author_id:
         raise HTTPException(
             status_code=403,
